@@ -15,7 +15,7 @@
 from ctypes import *
 import io
 import sys
-import logging
+import logging, argparse
 
 global reminder
 
@@ -153,7 +153,7 @@ def getPackData(offset):
                 if packID == 0x63:
                     pack63 = pack
 
-    print printRecdate(pack62),printRectime(pack63),printTimecode(pack13)    
+    print(printRecdate(pack62), printRectime(pack63), printTimecode(pack13))    
                     
 FORMAT = "0x%08x %s (0x%08x) %s"
 STRH   = "fccType: %s fccHandler: %s"
@@ -161,42 +161,41 @@ AVIH   = "dwTotalFrames: %d dwInitialFrames: %d"
 def process(test, offset):
     global reminder
     while reminder > 0:
-        if test.FourCC in ('LIST','RIFF'):
+        if test.FourCC in (b'LIST', b'RIFF'):
             logging.debug(FORMAT % (offset, test.FourCC, test.Size, test.Type))
             offset   = offset + 12
             reminder = reminder - 12
             test = Chunk()
         else:
             logging.debug(FORMAT % (offset, test.FourCC, test.Size, ''))
-            if test.FourCC == 'strh':
+            if test.FourCC == b'strh':
                 strh = StreamHeader()
                 buffer.seek(offset+8)
                 buffer.readinto(strh)
                 logging.debug(STRH % (strh.fccType, strh.fccHandler))
-                if strh.fccType == 'iavs':
+                if strh.fccType == b'iavs':
                     logging.debug('DV-AVI Type-1 detected.')
-                elif strh.fccType == 'vids':
+                elif strh.fccType == b'vids':
                     logging.debug('DV-AVI Type-2 detected.')
                 else:
                     pass
 
-            if test.FourCC == 'avih':
+            if test.FourCC == b'avih':
                 avih = AVIHeader()
                 buffer.seek(offset+8)
                 buffer.readinto(avih)
                 logging.debug(AVIH % (avih.dwTotalFrames, avih.dwInitialFrames))
                 
-            if test.FourCC == '00db' or test.FourCC == '00__' :
+            if test.FourCC == b'00db' or test.FourCC == b'00__' :
                 # skip 8 bytes for the FourCC and the size
                 getPackData(offset+8)
             offset   = offset   + test.Size + 8
             reminder = reminder - test.Size - 8
         buffer.seek(offset)
         buffer.readinto(test)
-        if test.FourCC in ('LIST','RIFF'):
+        if test.FourCC in (b'LIST',b'RIFF'):
             process(test, offset)
     return
-
 
 def base():
     
@@ -205,7 +204,8 @@ def base():
     offset = 0
     buffer.readinto(test)
 
-    if not test.FourCC == 'RIFF':
+    print("Check the header: %s" % test.FourCC)
+    if not test.FourCC == b'RIFF':
         raise Exception("Not a RIFF file.")
 
     reminder = test.Size + 8
@@ -214,17 +214,17 @@ def base():
 
 if __name__ == '__main__':
 
-    data   = sys.stdin.read()   # read an AVI file from the standard input
+    parser= argparse.ArgumentParser(description="DVAVI2SRT")
 
+    parser.add_argument('avifile')
+    args = parser.parse_args()
+
+    # read an AVI file from the standard input
+    file = open(args.avifile,'rb')
+    data = file.read()
+    
     if data == None:
         raise Exception("No AVI file specified.")
 
     buffer = io.BytesIO(data)
-    
     base()
-    
-    
-        
-        
-        
-    
