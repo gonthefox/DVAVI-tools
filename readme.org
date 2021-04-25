@@ -1,3 +1,24 @@
 * DVAVI-tools
   
   DVAVI 形式のビデオファイルのサブコードデータから撮影日時およびタイムコードを取得し、字幕ファイルを生成する。
+
+** arguments
+   
+   'i': avifile: DV-AVI input File. このプログラムの入力ファイル。
+   'r': RECDATE: RECDATE output file. SUBCODEから読み取ったRECDATEをテキストで出力する
+   't': TIMECODE: TIMECODE output file. SUBCODEから読み取ったTIMECODEをテキストで出力する
+
+** 処理概要   
+
+   DV-AVIファイルをバイナリデータとして読み込む
+
+   #+BEGIN_SRC python
+   file   = open(args.avifle, 'rb')
+   data   = file.read()
+   buffer = io.BytesIO(data)
+   #+END_SRC
+
+   
+   
+   
+   

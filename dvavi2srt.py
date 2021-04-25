@@ -204,9 +204,9 @@ def base():
     offset = 0
     buffer.readinto(test)
 
-    print("Check the header: %s" % test.FourCC)
+    print("Check if the file is valid RIFF: %s" % test.FourCC)
     if not test.FourCC == b'RIFF':
-        raise Exception("Not a RIFF file.")
+        raise Exception("Not a valid RIFF file.")
 
     reminder = test.Size + 8
     process(test, offset)
@@ -216,7 +216,9 @@ if __name__ == '__main__':
 
     parser= argparse.ArgumentParser(description="DVAVI2SRT")
 
-    parser.add_argument('avifile')
+    parser.add_argument('avifile', help='DV-AVI input file name')
+#    parser.add_argument('-r','rdfile', help='RECDATE output filename')
+#    parser.add_argument('-t','tcfile', help='TIMECODE output filename')        
     args = parser.parse_args()
 
     # read an AVI file from the standard input
