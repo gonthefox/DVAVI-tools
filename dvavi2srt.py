@@ -222,8 +222,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # read an AVI file from the standard input
-    file = open(args.avifile,'rb')
-    data = file.read()
+    data = None
+    with open(args.avifile,'rb') as file:
+        data = file.read()
     
     if data == None:
         raise Exception("No AVI file specified.")
