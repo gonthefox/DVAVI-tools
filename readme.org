@@ -1,6 +1,6 @@
 * DVAVI-tools
   
-  DVAVI 形式のビデオファイルのサブコードデータから撮影日時およびタイムコードを取得し、字幕ファイルを生成する。
+  DV-AVI 形式のビデオファイルのサブコードデータから撮影日時およびタイムコードを取得し、字幕ファイルを生成する。
 
 ** arguments
    
@@ -18,7 +18,14 @@
    buffer = io.BytesIO(data)
    #+END_SRC
 
-   
-   
-   
-   
+   有効なRIFFファイルかどうかを判断する
+
+   base()関数内でChunk() クラスのオブジェクトにbufferの内容を読み込む
+   FourCCを調べb'RIFFかどうかをチェックしている
+
+   #+BEGIN_SRC python
+   buffer.readinto(test) # test = Chunk()
+   if not test.FourCC == b'RIFF':
+      raise Exception("Not a valid RIFF file.")
+   #+END_SRC
+
