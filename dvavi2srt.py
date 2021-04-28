@@ -68,7 +68,6 @@ class PACK(Structure):
         return (self.DATA[0], self.DATA[1], self.DATA[2],self.DATA[3],self.DATA[4])
     def packID(self):
         return self.DATA[0]
-
     def packData(self):
         return (self.DATA[1], self.DATA[2],self.DATA[3],self.DATA[4])      
 
@@ -80,6 +79,14 @@ class PDIF(Structure):
         ('Dummy',c_ubyte * 2)
     )
 
+# 480 Bytes = 6 PDIF
+class SYSTEM(Structure):
+    _fields_ = (
+        ('HEADER', PDIF),
+        ('SUBCODE', PDIF * 2),
+        ('VAUX',PDIF * 3)
+    )
+    
 # 80 Bytes    
 class DIF(Structure):
     _fields_ = (
@@ -99,158 +106,6 @@ class FRAME(Structure):
         ('SEQ', SEQ * 10),        
         ('dum', c_ubyte * 0)
         )    
-
-#クラス内に可変長配列を定義できないのでトリックを使う
-def base_old(data):
-    global reminder, offset
-    buffer = io.BytesIO(data)        
-        
-    # RIFF AVI
-    offset = 0
-    riff   = Chunk()
-    buffer.seek(offset)
-    buffer.readinto(riff)
-
-    logging.debug("RIFF AVI")        
-    logging.debug(FORMAT % (offset, riff.ID, riff.Size, riff.FourCC))
-    logging.debug("0x%08x" % int(sizeof(riff) - 12))            
-
-    #LIST hdrl Header List
-    offset += 12
-    hdrl   = Chunk()    
-    buffer.seek(offset)
-    buffer.readinto(hdrl)
-    logging.debug("LIST Header")            
-    logging.debug(FORMAT % (offset, hdrl.ID, hdrl.Size, hdrl.FourCC))
-    logging.debug("0x%08x" % int(sizeof(hdrl) - 12))            
-
-    #AVIH AVI Header
-    offset += 12
-    avih   = AVIHeader()    
-    buffer.seek(offset)
-    buffer.readinto(avih)
-    logging.debug("AVI Header")            
-    logging.debug(FORMAT % (offset, avih.ID, avih.Size, ""))
-    logging.debug(AVIH % (avih.dwTotalFrames, avih.dwInitialFrames))    
-    logging.debug("0x%08x" % int(sizeof(avih) - 12))            
-
-    #LIST STRL Stream List
-    offset += avih.Size + 8
-    liststrl1   = Chunk()    
-    buffer.seek(offset)
-    buffer.readinto(liststrl1)
-    logging.debug("STREAM List")            
-    logging.debug(FORMAT % (offset, liststrl1.ID, liststrl1.Size, liststrl1.FourCC))
-    logging.debug("0x%08x" % int(sizeof(liststrl1) - 12))            
-
-    #STRH Stream Header (video)
-    offset += 12
-    strh   = StreamHeader()    
-    buffer.seek(offset)
-    buffer.readinto(strh)
-    logging.debug("Stream Header")            
-    logging.debug(FORMAT % (offset, strh.ID, strh.Size, strh.fccType))
-    logging.debug("0x%08x" % int(sizeof(strh) - 12))            
-
-    #STRF Stream format (video)
-    offset += strh.Size + 8
-    test   = Chunk()    
-    buffer.seek(offset)
-    buffer.readinto(test)
-    logging.debug("Stream format")            
-    logging.debug(FORMAT % (offset, test.ID, test.Size, ""))
-    logging.debug("0x%08x" % int(sizeof(test) - 12))            
-
-    #index
-    offset += test.Size + 8
-    test   = Chunk()    
-    buffer.seek(offset)
-    buffer.readinto(test)
-    logging.debug("LIST Stream list")            
-    logging.debug(FORMAT % (offset, test.ID, test.Size, ""))
-    logging.debug("0x%08x" % int(sizeof(test) - 12))            
-
-    #Stream Header
-    offset += test.Size + 8
-    liststrl2   = Chunk()    
-    buffer.seek(offset)
-    buffer.readinto(liststrl2)
-    logging.debug("LIST Stream")            
-    logging.debug(FORMAT % (offset, liststrl2.ID, liststrl2.Size, liststrl2.FourCC))
-    logging.debug("0x%08x" % int(sizeof(liststrl2) - 12))            
-
-    #STRH Stream Header (audio)
-    offset += 12
-    strh2   = StreamHeader()    
-    buffer.seek(offset)
-    buffer.readinto(strh2)
-    logging.debug("Stream Header")            
-    logging.debug(FORMAT % (offset, strh2.ID, strh2.Size, strh2.fccType))
-    logging.debug("0x%08x" % int(sizeof(strh2) - 12))            
-
-    #STRF Stream format (audio)
-    offset += strh2.Size + 8
-    test   = Chunk()    
-    buffer.seek(offset)
-    buffer.readinto(test)
-    logging.debug("LIST Stream")            
-    logging.debug(FORMAT % (offset, test.ID, test.Size, ""))
-    logging.debug("0x%08x" % int(sizeof(test) - 12))            
-
-    #Stream header
-    offset += test.Size + 8
-    test   = Chunk()    
-    buffer.seek(offset)
-    buffer.readinto(test)
-    logging.debug("stream header")            
-    logging.debug(FORMAT % (offset, test.ID, test.Size, ""))
-    logging.debug("0x%08x" % int(sizeof(test) - 12))            
-
-    #Stream format
-    offset += test.Size + 8
-    test   = Chunk()    
-    buffer.seek(offset)
-    buffer.readinto(test)
-    logging.debug("stream format")            
-    logging.debug(FORMAT % (offset, test.ID, test.Size, test.FourCC))
-    logging.debug("0x%08x" % int(sizeof(test) - 12))            
-
-    #JUNK
-    offset += test.Size + 8
-    test   = Chunk()    
-    buffer.seek(offset)
-    buffer.readinto(test)
-    logging.debug("junk")            
-    logging.debug(FORMAT % (offset, test.ID, test.Size, ""))
-    logging.debug("0x%08x" % int(sizeof(test) - 12))            
-
-    #MOVI List ここから実データ
-    offset += test.Size + 8
-    test   = Chunk()    
-    buffer.seek(offset)
-    buffer.readinto(test)
-    logging.debug("LIST movi")            
-    logging.debug(FORMAT % (offset, test.ID, test.Size, test.FourCC))
-    logging.debug("0x%08x" % int(sizeof(test) - 12))            
-
-    offset += 12
-#    test   = PackData()    
-    buffer.seek(offset)
-    buffer.readinto(test)
-    logging.debug("PACK DATA")            
-#    logging.debug(FORMAT % (offset, test.ID, test.Size, test.FourCC))
-    logging.debug("0x%08x" % int(sizeof(test) - 12))            
-    
-    #idx1
-    offset += test.Size + 8
-    test   = Chunk()    
-    buffer.seek(offset)
-    buffer.readinto(test)
-    logging.debug("idx1")            
-    logging.debug(FORMAT % (offset, test.ID, test.Size, test.FourCC))
-    logging.debug("0x%08x" % int(sizeof(test) - 12))            
-    
-    return
     
 def printTimecode(pack12):
     if (pack12.DATA[1],pack12.DATA[2],pack12.DATA[3],pack12.DATA[4]) == (0xff,0xff,0xff,0xff):
@@ -287,78 +142,10 @@ def printRecdate(pack11):
     else:
         return "%04d-%02d-%02d" % (year, month, dom)        
     
-def getPackData(offset):
-    pack13 = PACK(0x13)
-    pack62 = PACK(0x62)
-    pack63 = PACK(0x63)
-    block={}
-    for i in range(0,10):
-        for j in range(0,6):
-            k = i*6+j
-            block[k] = PDIF()
-            buffer.seek(offset+sizeof(PDIF*150*i)+sizeof(PDIF*j))
-            buffer.readinto(block[k])
-
-    for i in range(0,60):
-        for n  in range(0,15):
-            pack      =  block[i].PACK[n]
-            packID    =  pack.packID()
-            packDATA  =  pack.packData()            
-
-            if not packDATA == (0xff,0xff,0xff,0xff):
-                if packID == 0x13:
-                    pack13 = pack
-                if packID == 0x62:
-                    pack62 = pack
-                if packID == 0x63:
-                    pack63 = pack
-
-    print(printRecdate(pack62), printRectime(pack63), printTimecode(pack13))    
-                    
 FORMAT = "0x%08x %s (0x%08x) %s"
-# FORMAT = "0x%08x %s (0x%08x)"
 STRH   = "fccType: %s fccHandler: %s"
 AVIH   = "dwTotalFrames: %d dwInitialFrames: %d"
 LOAD  = "Total Bytes: %s ID:%s Size: (0x%08x)"
-
-def process(test, offset):
-    global reminder
-    while reminder > 0:
-        if test.FourCC in (b'LIST', b'RIFF'):
-            logging.debug(FORMAT % (offset, test.FourCC, test.Size))
-            offset   = offset + 12
-            reminder = reminder - 12
-            test = Chunk()
-        else:
-            logging.debug(FORMAT % (offset, test.FourCC, test.Size))
-            if test.FourCC == b'strh':
-                strh = StreamHeader()
-                buffer.seek(offset+8)
-                buffer.readinto(strh)
-                logging.debug(STRH % (strh.fccType, strh.fccHandler))
-                if strh.fccType == b'iavs':
-                    logging.debug('DV-AVI Type-1 detected.')
-                elif strh.fccType == b'vids':
-                    logging.debug('DV-AVI Type-2 detected.')
-                else:
-                    pass
-
-            if test.FourCC == b'avih':
-                avih = AVIHeader()
-                buffer.seek(offset+8)
-                buffer.readinto(avih)
-                logging.debug(AVIH % (avih.dwTotalFrames, avih.dwInitialFrames))
-                
-            if test.FourCC == b'00db' or test.FourCC == b'00__' :
-                # skip 8 bytes for the FourCC and the size
-                getPackData(offset+8)
-            offset   = offset   + test.Size + 8
-            reminder = reminder - test.Size - 8
-        buffer.seek(offset)
-        buffer.readinto(test)
-        if test.FourCC in (b'LIST',b'RIFF'):
-            process(test, offset)
-    return
 
 def base(data):
 
@@ -412,43 +199,91 @@ def base(data):
 
     base_offset = offset
     print("base: %x" % base_offset)
-    while(offset<=0x82fde38):
+    while(chunk.ID != b'idx1'):
         logging.debug(FORMAT % (offset, chunk.ID, chunk.Size, ""))
-        print(FORMAT % (offset, chunk.ID, chunk.Size, ""))
         base_offset += 8        
-        if chunk.ID == b'00db' or chunk.ID == b'01__' :
-            block={}
+        if chunk.ID == b'00db':
+            system={}
+            timecode = None            
             for i in range(0,10):
-                for j in range(0,6):
-                    k = i*6+j
-                    block[k] = PDIF()
-                    offset = base_offset + sizeof(PDIF*150*i)+sizeof(PDIF*j)
-                    buffer.seek(offset)
-                    buffer.readinto(block[k])
+                system[i] = SYSTEM()
+                offset = base_offset + sizeof(PDIF*150*i)
+                buffer.seek(offset)
+                buffer.readinto(system[i])
+
+            pack13 = extractPack0x13(system)
+            pack63 = extractPack0x63(system)
+            pack62 = extractPack0x62(system)
+
+            print(printRecdate(pack62), printRectime(pack63), printTimecode(pack13))
+
+            rdfile.write("%s %s\n" % (printRecdate(pack62), printRectime(pack63)))
+            tcfile.write("%s\n" % printTimecode(pack13))
 
         base_offset += chunk.Size
         chunk = Chunk()        
         buffer.seek(base_offset)
         buffer.readinto(chunk)
-
     return
 
+def extractPack0x13(system):
+    pack13 = PACK(0x13)
+    for i in range(0,10):
+        for j in range(0,2):
+            for k in range(0,15):
+                pack     = system[i].SUBCODE[j].PACK[k]
+                packID = pack.packID()
+                if packID == 0x13:
+                    if not pack.DATA[4] == 0xff:
+                        pack13 = pack
+    return pack13
+
+def extractPack0x63(system):
+    pack63 = PACK(0x63)
+    for i in range(0,10):
+        for j in range(0,3):
+            for k in range(0,15):
+                pack     = system[i].VAUX[j].PACK[k]
+                packID = pack.packID()
+                if packID == 0x63:
+                    if not pack.DATA[4] == 0xff:
+                        pack63 = pack
+    return pack63
+
+def extractPack0x62(system):
+    pack62 = PACK(0x62)
+    for i in range(0,10):
+        for j in range(0,3):
+            for k in range(0,15):
+                pack     = system[i].VAUX[j].PACK[k]
+                packID = pack.packID()
+                if packID == 0x62:
+                    if not pack.DATA[4] == 0xff:
+                        pack62 = pack
+    return pack62
 
 if __name__ == '__main__':
 
     parser= argparse.ArgumentParser(description="DVAVI2SRT")
 
-    parser.add_argument('avifile', help='DV-AVI input file name')
-#    parser.add_argument('-r','rdfile', help='RECDATE output filename')
-#    parser.add_argument('-t','tcfile', help='TIMECODE output filename')        
+    parser.add_argument('-a', '--avifile', help='DV-AVI input file name')
+    parser.add_argument('-r', '--rdfile',   help='RECDATE output filename')
+    parser.add_argument('-t', '--tcfile',   help='TIMECODE output filename')        
     args = parser.parse_args()
 
     # read an AVI file from the standard input
     data = None
     with open(args.avifile,'rb') as file:
         data = file.read()
-    
+
+    rdfile = open(args.rdfile,'w')
+    tcfile = open(args.tcfile,'w')     
+        
     if data == None:
         raise Exception("No AVI file specified.")
 
     base(data)
+
+    rdfile.close()
+    tcfile.close()
+                
