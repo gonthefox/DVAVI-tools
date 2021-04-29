@@ -15,7 +15,7 @@
 from ctypes import *
 import io
 import sys
-import logging, argparse
+import logging, argparse, datetime
 
 global offset
 global reminder
@@ -197,6 +197,11 @@ def base(data):
     logging.debug(FORMAT % (offset, chunk.ID, chunk.Size, ""))        
     print(FORMAT % (offset, chunk.ID, chunk.Size, ""))
 
+    #for SRT
+    SRT = "%s,%s-->%s,%s\n"
+    index = 0
+    tick  = datetime.datetime(year=2000, month=1, day=1,hour=0, minute=0, second=0)
+    
     base_offset = offset
     print("base: %x" % base_offset)
     while(chunk.ID != b'idx1'):
@@ -215,10 +220,27 @@ def base(data):
             pack63 = extractPack0x63(system)
             pack62 = extractPack0x62(system)
 
+
+            if (index !=  0) and (index%30 == 0):
+                tick = tick + datetime.timedelta(microseconds=1000000)
+            
             print(printRecdate(pack62), printRectime(pack63), printTimecode(pack13))
 
+            rdfile.write("%d\n" % index)
+            if index%30 == 29:
+                rdfile.write(SRT % (tick.time(), index%30*33, tick.time(), index%30*33+42))
+            else:
+                rdfile.write(SRT % (tick.time(), index%30*33, tick.time(), index%30*33+33))
             rdfile.write("%s %s\n" % (printRecdate(pack62), printRectime(pack63)))
+
+            tcfile.write("%d\n" % index)
+            if index%30 == 29:
+                tcfile.write(SRT % (tick.time(), index%30*33, tick.time(), index%30*33+42))
+            else:
+                tcfile.write(SRT % (tick.time(), index%30*33, tick.time(), index%30*33+33))
             tcfile.write("%s\n" % printTimecode(pack13))
+
+            index += 1
 
         base_offset += chunk.Size
         chunk = Chunk()        
