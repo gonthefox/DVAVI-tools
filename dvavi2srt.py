@@ -107,14 +107,14 @@ class FRAME(Structure):
         ('dum', c_ubyte * 0)
         )    
     
-def printTimecode(pack12):
-    if (pack12.DATA[1],pack12.DATA[2],pack12.DATA[3],pack12.DATA[4]) == (0xff,0xff,0xff,0xff):
+def printTimecode(pack0x13):
+    if (pack0x13.DATA[1],pack0x13.DATA[2],pack0x13.DATA[3],pack0x13.DATA[4]) == (0xff,0xff,0xff,0xff):
         return "%02s:%02s:%02s %02s" % ('--', '--', '--', '--')
     else:
-        hour    = (pack12.DATA[4]>>4 & 0x03)*10+(pack12.DATA[4] & 0x0f)
-        minute  = (pack12.DATA[3]>>4 & 0x07)*10+(pack12.DATA[3] & 0x0f)
-        second  = (pack12.DATA[2]>>4 & 0x07)*10+(pack12.DATA[2] & 0x0f)
-        frame   = (pack12.DATA[1]>>4 & 0x03)*10+(pack12.DATA[1] & 0x0f)        
+        hour    = (pack0x13.DATA[4]>>4 & 0x03)*10+(pack0x13.DATA[4] & 0x0f)
+        minute  = (pack0x13.DATA[3]>>4 & 0x07)*10+(pack0x13.DATA[3] & 0x0f)
+        second  = (pack0x13.DATA[2]>>4 & 0x07)*10+(pack0x13.DATA[2] & 0x0f)
+        frame   = (pack0x13.DATA[1]>>4 & 0x03)*10+(pack0x13.DATA[1] & 0x0f)        
         return "%02d:%02d:%02d %02d" % (hour, minute, second, frame)
 
 def printRectime(pack12):
@@ -199,9 +199,10 @@ def base(data):
 
     #for SRT
     SRT = "%s,%s-->%s,%s\n"
-    index = 0
-    tick  = datetime.datetime(year=2000, month=1, day=1,hour=0, minute=0, second=0)
-    
+    index  = 0
+    sindex = 0
+    tick   = datetime.datetime(year=2000, month=1, day=1,hour=0, minute=0, second=0)
+    tick_a = tick + datetime.timedelta(seconds=1)
     base_offset = offset
     print("base: %x" % base_offset)
     while(chunk.ID != b'idx1'):
@@ -220,27 +221,25 @@ def base(data):
             pack63 = extractPack0x63(system)
             pack62 = extractPack0x62(system)
 
-
-            if (index !=  0) and (index%30 == 0):
-                tick = tick + datetime.timedelta(microseconds=1000000)
-            
             print(printRecdate(pack62), printRectime(pack63), printTimecode(pack13))
+            
+            if index%30 == 0:
+                rdfile.write("%d\n" % sindex)                
+                rdfile.write(SRT % (tick.time(), "000", tick_a.time(), "000"))
+                tick   = tick + datetime.timedelta(seconds=1)
+                tick_a = tick + datetime.timedelta(seconds=1)
+                rdfile.write("%s %s\n\n" % (printRecdate(pack62), printRectime(pack63)))
+                sindex += 1
 
-            rdfile.write("%d\n" % index)
-            if index%30 == 29:
-                rdfile.write(SRT % (tick.time(), index%30*33, tick.time(), index%30*33+42))
+
+            tcfile.write("%d\n" % index)                
+            if index%30 < 10:
+                tcfile.write(SRT % (tick.time(), index%30*34, tick.time(), (index+1)%30*34))
             else:
-                rdfile.write(SRT % (tick.time(), index%30*33, tick.time(), index%30*33+33))
-            rdfile.write("%s %s\n" % (printRecdate(pack62), printRectime(pack63)))
+                tcfile.write(SRT % (tick.time(), index%30*33, tick.time(), (index+1)%30*33))
+            tcfile.write("%s\n\n" % printTimecode(pack13))
 
-            tcfile.write("%d\n" % index)
-            if index%30 == 29:
-                tcfile.write(SRT % (tick.time(), index%30*33, tick.time(), index%30*33+42))
-            else:
-                tcfile.write(SRT % (tick.time(), index%30*33, tick.time(), index%30*33+33))
-            tcfile.write("%s\n" % printTimecode(pack13))
-
-            index += 1
+            index += 1                
 
         base_offset += chunk.Size
         chunk = Chunk()        
@@ -256,7 +255,7 @@ def extractPack0x13(system):
                 pack     = system[i].SUBCODE[j].PACK[k]
                 packID = pack.packID()
                 if packID == 0x13:
-                    if not pack.DATA[4] == 0xff:
+                    if not (pack.DATA[1] & 0x0f) == 0x0f:
                         pack13 = pack
     return pack13
 
