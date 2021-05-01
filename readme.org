@@ -1,6 +1,105 @@
-* DVAVI-tools
-  
+p* DVAVI-tools
+
+  dvavi2srt.py
+
   DV-AVI 形式のビデオファイルのサブコードデータから撮影日時およびタイムコードを取得し、字幕ファイルを生成する。
+
+** DV-AVI file format
+
+   AVI ファイルは Resource Interchange File Format (RIFF) というファイ
+   ル形式に従っている。これは1991年にマイクロソフトとIBMが提案し、
+   Windows 3.1のマルチメディアファイルのデフォルトフォーマットとして採
+   用された。
+
+   これは更に、エレクトロニック・アーツが1985年に策定した Interchange
+   File Format (IFF)に基づいている。
+
+   RIFFファイルの基本的構成であるチャンクはは以下の通り(field名は正式
+   なものではない)
+   
+
+   | field | length | description                              |
+   |-------+--------+------------------------------------------|
+   | ID    | 4 Byte | ASCII 文字                               |
+   | SIZE  | 4 Byte | 符号なし32ビット整数                     |
+   | DATA  | n Byte | 可変長フィールド(SIZEで指定された大きさ) |
+
+   チャンクのIDが'RIFF'または'LIST'のとき、DATAには別のチャンクを含む
+   ことができる。つまり階層構成を取ることができる。
+   
+   最上位層のチャンクのIDは必ず'RIFF'である。DATAの最初の4 Byteには
+   FourCCという識別子が入ることがある。
+
+
+   実際のAVIファイルは次のような構成になっている。
+   デジタルインターフェース(iLink)に出力されるデータの１フレームに相当
+   する部分がID '01wb'のチャンクに含まれる。120,000 Byteのデータである。
+
+   #+begin_example
+   
+   RIFF (AVI) ---\
+                 |
+                 \--- LIST (hdrl) ---\
+                                     |
+                                     \--- avih
+                                     |
+                                     \--- LIST(strl)---\
+                                     |                  |
+                                     |                  \--- strh (vids)
+                                     |                  |
+                                     |                  \--- strf
+                                     |                  |
+                                     |                  \--- indx
+                                     |
+                                     |
+                                     |
+                                     \--- LIST(strl)---\
+                                     |                  |
+                                     |                  \--- strh(auds)
+                                     |                  |
+                                     |                  \--- strf
+                                     |                  |
+                                     |                  \--- indx
+                                     |
+                                     |
+                                     \--- LIST(odml)---\
+                                     |                 |
+                                     |                 \--- dmlh
+                                     |                 |
+                                     |                 \--- JUNK
+                                     |
+                                     \--- LIST(movi)---\
+                                                       |
+                                                       \--- 00dw
+                                                       |
+                                                       \--- 01wb
+                                                       |
+                                                       \--- 00dw
+                                                       |
+                                                       \--- 01wb
+                                                       |
+                                                       \--- 00dw
+                                                       |
+                                                       \--- 01wb
+
+                                           (フレームの数だけ00dw, 01wbを繰り返す)
+
+                                                       \--- ix00
+                                                       |
+                                                       \--- ix01
+
+   
+   #+end_example
+
+   |'RIFF'| 0x0830f054 |'AVI'|
+
+
+   |'LIST'| 0x00008232 |'hdrl'|
+
+   
+   |'avih'| 0x00008232|
+
+   |'LIST'|
 
 ** arguments
    
