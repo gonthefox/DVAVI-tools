@@ -91,16 +91,6 @@
    
    #+end_example
 
-   |'RIFF'| 0x0830f054 |'AVI'|
-
-
-   |'LIST'| 0x00008232 |'hdrl'|
-
-   
-   |'avih'| 0x00008232|
-
-   |'LIST'|
-
 ** arguments
    
    'i': avifile: DV-AVI input File. このプログラムの入力ファイル。
@@ -127,4 +117,11 @@
    if not test.FourCC == b'RIFF':
       raise Exception("Not a valid RIFF file.")
    #+END_SRC
+
+* TIPS
+  ディレクトリ内の *avi ファイルの 撮影日時情報を一覧する
+  -I {} はプレースフォルダ
+
+  find /PATH-TO-AVI-FILES/. | xargs -I {} python -a {} -r tmp1 -t tmp2
+
 
