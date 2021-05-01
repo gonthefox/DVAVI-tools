@@ -158,7 +158,7 @@ def find_movi(data):
     buffer.readinto(riff)
 
     logging.debug(FORMAT % (offset, riff.ID, riff.Size, riff.FourCC))    
-    print(FORMAT % (offset, riff.ID, riff.Size, riff.FourCC))            
+#    print(FORMAT % (offset, riff.ID, riff.Size, riff.FourCC))            
     
     offset += 12
     chunk = Chunk()
@@ -166,7 +166,7 @@ def find_movi(data):
     buffer.readinto(chunk)
 
     logging.debug(FORMAT % (offset, chunk.ID, chunk.Size, chunk.FourCC))        
-    print(FORMAT % (offset,chunk.ID, chunk.Size, chunk.FourCC))            
+#    print(FORMAT % (offset,chunk.ID, chunk.Size, chunk.FourCC))            
     
     movi = None
     if not chunk.ID == b'LIST':
@@ -182,9 +182,45 @@ def find_movi(data):
             buffer.readinto(chunk)
             
     logging.debug(FORMAT % (offset, movi.ID, movi.Size, movi.FourCC))    
-    print(FORMAT % (offset, movi.ID, movi.Size, movi.FourCC))
+#    print(FORMAT % (offset, movi.ID, movi.Size, movi.FourCC))
 
     return offset
+
+def getRecdatetime(data, offset):
+    buffer = io.BytesIO(data)
+    
+    offset += 12
+    chunk = Chunk()
+    buffer.seek(offset)
+    buffer.readinto(chunk)
+
+    logging.debug(FORMAT % (offset, chunk.ID, chunk.Size, ""))        
+#    print(FORMAT % (offset, chunk.ID, chunk.Size, ""))
+
+    base_offset = offset
+#    print("base: %x" % base_offset)
+    while(chunk.ID != b'idx1'):
+        logging.debug(FORMAT % (offset, chunk.ID, chunk.Size, ""))
+        base_offset += 8        
+        if chunk.ID == b'00db':
+            system={}
+            timecode = None            
+            for i in range(0,10):
+                system[i] = SYSTEM()
+                offset = base_offset + sizeof(PDIF*150*i)
+                buffer.seek(offset)
+                buffer.readinto(system[i])
+
+            pack63 = extractPack0x63(system)
+            pack62 = extractPack0x62(system)
+
+            return "%s %s" % (printRecdate(pack62), printRectime(pack63))
+
+        base_offset += chunk.Size
+        chunk = Chunk()        
+        buffer.seek(base_offset)
+        buffer.readinto(chunk)
+    
 
 def process(data, offset):
 
@@ -290,7 +326,8 @@ if __name__ == '__main__':
 
     parser.add_argument('-a', '--avifile', help='DV-AVI input file name')
     parser.add_argument('-r', '--rdfile',   help='RECDATE output filename')
-    parser.add_argument('-t', '--tcfile',   help='TIMECODE output filename')        
+    parser.add_argument('-t', '--tcfile',   help='TIMECODE output filename')
+    parser.add_argument('-o', '--option',   help='option')
     args = parser.parse_args()
 
     # read an AVI file from the standard input
@@ -305,7 +342,10 @@ if __name__ == '__main__':
         raise Exception("No AVI file specified.")
 
     offset = find_movi(data)
-    process(data, offset)
+    if args.option == 'srt':
+        process(data, offset)
+    else:
+        print(getRecdatetime(data, offset))
 
     rdfile.close()
     tcfile.close()
