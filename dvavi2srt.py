@@ -147,12 +147,8 @@ STRH   = "fccType: %s fccHandler: %s"
 AVIH   = "dwTotalFrames: %d dwInitialFrames: %d"
 LOAD  = "Total Bytes: %s ID:%s Size: (0x%08x)"
 
-def base(data):
-
-    pack13 = PACK(0x13)
-    pack62 = PACK(0x62)
-    pack63 = PACK(0x63)
-
+# return offset for the movi chunk
+def find_movi(data):
     buffer = io.BytesIO(data)
 
     # RIFF AVI
@@ -179,7 +175,6 @@ def base(data):
     while(True):
         if chunk.FourCC == b'movi':
             movi = chunk
-
             break
         else:
             offset += chunk.Size + 8
@@ -189,6 +184,12 @@ def base(data):
     logging.debug(FORMAT % (offset, movi.ID, movi.Size, movi.FourCC))    
     print(FORMAT % (offset, movi.ID, movi.Size, movi.FourCC))
 
+    return offset
+
+def process(data, offset):
+
+    buffer = io.BytesIO(data)
+    
     offset += 12
     chunk = Chunk()
     buffer.seek(offset)
@@ -303,7 +304,8 @@ if __name__ == '__main__':
     if data == None:
         raise Exception("No AVI file specified.")
 
-    base(data)
+    offset = find_movi(data)
+    process(data, offset)
 
     rdfile.close()
     tcfile.close()
