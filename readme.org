@@ -1,4 +1,4 @@
-p* DVAVI-tools
+* DVAVI-tools
 
   dvavi2srt.py
 
